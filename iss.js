@@ -1,5 +1,5 @@
-const request = require('request');
-const fs = require('fs');
+const request = require("request");
+const fs = require("fs");
 
 /**
  * Makes a single API request to retrieve the user's IP address.
@@ -9,41 +9,43 @@ const fs = require('fs');
  *   - An error, if any (nullable)
  *   - The IP address as a string (null if error). Example: "162.245.144.188"
  */
+
 const fetchMyIP = function(callback) {
-  // use request to fetch IP address from JSON API
-  request(
-    'https://api.ipify.org?format=json',
-    (error, response, body) => {
-      const data = JSON.parse(body);
-      if (error) return callback(error, null)
- 
-      if (response.statusCode !== 200) {
-        callback(Error(`Status Code ${response.statusCode} when fetching IP. Response: ${body}`), null);
-        return;
-      }
-      
-      const ip = JSON.parse(body).ip;
-      callback(null, ip);
-    });
+	// use request to fetch IP address from JSON API
+	request("https://api.ipify.org?format=json", function(error, response, body) {
+		if (error) {
+			callback(error, null);
+			return;
+		}
+		// if non-200 status, assume server error
+		if (response.statusCode !== 200) {
+			const msg = `Status Code ${response.statusCode} when fetching IP. Response: ${body}`;
+			callback(Error(msg), null);
+			return;
+		}
+		// if no problems by this point return the data w/ callback
+		callback(null, JSON.parse(body).ip);
+	});
 };
 
 const fetchCoordsByIP = function(ip, callback) {
-  request(
-    'https://ipvigilante.com/8.8.8.8',
-    (data) => {
-      console.log(data);
-      // const latitude = JSON.parse(data.latitude);
-      // const longtitude = JSON.parse(data.longtitude);
+	request("https://ipvigilante.com/8.8.8.8", function(error, response, body) {
+		let data = {};
+		data.longitude = JSON.parse(body).data["longitude"];
+		data.latitude = JSON.parse(body).data["latitude"];
 
-      // if(error) return callback(error, null);
-      
-    // return lat;
-    }
-  )
-  // console.log(latitude, longtitude);
-}
+		if (JSON.parse(body).status !== "success") {
+			console.log("shit", JSON.parse(body).errors[0].code);
+			error = JSON.parse(body).errors[0].message;
+			callback(error);
+		}
+		// let {longitude, latitude} = JSON.parse(body).data;
 
-module.exports = { 
-  fetchMyIP,
-  fetchCoordsByIP
- };
+		console.log(JSON.parse(body).status);
+	});
+};
+
+module.exports = {
+	fetchMyIP,
+	fetchCoordsByIP
+};
